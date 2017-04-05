@@ -702,52 +702,17 @@ public class ApplicationConfiguration implements EntryPoint {
 
         // Prepare the debugging window
         if (isDebugMode()) {
-            /*
-             * XXX Lots of implementation details here right now. This should be
-             * cleared up when an API for extending the debug window is
-             * implemented.
-             */
-            VDebugWindow window = VDebugWindow.get();
+            GWT.runAsync(VDebugWindow.class, new RunAsyncCallback() {
+                @Override
+                public void onSuccess() {
+                    initDebugWindow();
+                }
 
-            if (LogConfiguration.loggingIsEnabled()) {
-                window.addSection((Section) GWT.create(LogSection.class));
-            }
-            window.addSection((Section) GWT.create(InfoSection.class));
-            window.addSection((Section) GWT.create(HierarchySection.class));
-            window.addSection((Section) GWT.create(NetworkSection.class));
-            window.addSection((Section) GWT.create(TestBenchSection.class));
-            if (Profiler.isEnabled()) {
-                window.addSection((Section) GWT.create(ProfilerSection.class));
-            }
-
-            if (isQuietDebugMode()) {
-                window.close();
-            } else {
-                // Load debug window styles asynchronously
-                GWT.runAsync(new RunAsyncCallback() {
-                    @Override
-                    public void onSuccess() {
-                        DebugWindowStyles dws = GWT
-                                .create(DebugWindowStyles.class);
-                        dws.css().ensureInjected();
-                    }
-
-                    @Override
-                    public void onFailure(Throwable reason) {
-                        Window.alert(
-                                "Failed to load Vaadin debug window styles");
-                    }
-                });
-
-                window.init();
-            }
-
-            // Connect to the legacy API
-            VConsole.setImplementation(window);
-
-            Handler errorNotificationHandler = GWT
-                    .create(ErrorNotificationHandler.class);
-            Logger.getLogger("").addHandler(errorNotificationHandler);
+                @Override
+                public void onFailure(Throwable reason) {
+                    Window.alert("Failed to load Vaadin debug window");
+                }
+            });
         }
 
         if (LogConfiguration.loggingIsEnabled()) {
@@ -778,6 +743,41 @@ public class ApplicationConfiguration implements EntryPoint {
             return;
         }
         registerCallback(GWT.getModuleName());
+    }
+
+    private static void initDebugWindow() {
+        /*
+         * XXX Lots of implementation details here right now. This should be
+         * cleared up when an API for extending the debug window is implemented.
+         */
+        VDebugWindow window = VDebugWindow.get();
+
+        if (LogConfiguration.loggingIsEnabled()) {
+            window.addSection((Section) GWT.create(LogSection.class));
+        }
+        window.addSection((Section) GWT.create(InfoSection.class));
+        window.addSection((Section) GWT.create(HierarchySection.class));
+        window.addSection((Section) GWT.create(NetworkSection.class));
+        window.addSection((Section) GWT.create(TestBenchSection.class));
+        if (Profiler.isEnabled()) {
+            window.addSection((Section) GWT.create(ProfilerSection.class));
+        }
+
+        if (isQuietDebugMode()) {
+            window.close();
+        } else {
+            DebugWindowStyles dws = GWT.create(DebugWindowStyles.class);
+            dws.css().ensureInjected();
+
+            window.init();
+        }
+
+        // Connect to the legacy API
+        VConsole.setImplementation(window);
+
+        Handler errorNotificationHandler = GWT
+                .create(ErrorNotificationHandler.class);
+        Logger.getLogger("").addHandler(errorNotificationHandler);
     }
 
     /**
